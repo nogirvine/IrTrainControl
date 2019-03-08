@@ -1,2 +1,2 @@
 # IrTrainControl
-Infrared remote for table top 00 gauge railway
+Arduino based infrared remote for table top 00 gauge railway
