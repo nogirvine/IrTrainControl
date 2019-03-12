@@ -69,6 +69,7 @@ http://www.trainelectronics.com/DCC_Arduino/DCC++/IRThrottle/images/DCC__Throttl
 
 
 int irButton;
+int powerToggle = 0;
 int IRdelay = 240; // determines speed of repeating button pushes when button held
 int LED = 13; // LED to blink when DCC packets are sent in loop
 int ReedEnd = 3;  // Reed Switch at each end
@@ -111,13 +112,14 @@ int dnFlag = 0;
 
 const unsigned int I2C_ADDR = 0x27; // <<----- Add your address here.  Find it from I2C Scanner
 const int BACKLIGHT_PIN = 3;
-#define En_pin  2
-#define Rw_pin  1
-#define Rs_pin  0
-#define D4_pin  4
-#define D5_pin  5
-#define D6_pin  6
-#define D7_pin  7
+
+//#define En_pin  2
+//#define Rw_pin  1
+//#define Rs_pin  0
+//#define D4_pin  4
+//#define D5_pin  5
+//#define D6_pin  6
+//#define D7_pin  7
 
   // LiquidCrystal_I2C  lcd(I2C_ADDR, En_pin, Rw_pin, Rs_pin, D4_pin, D5_pin, D6_pin, D7_pin);
 LiquidCrystal_I2C lcd(I2C_ADDR,16,2);
@@ -134,6 +136,19 @@ int irTemp = 0;
 int StopButtonPressedOnceFlag = 0; // used to detect 2nd button push within a fraction of a second
 unsigned long time;
 char VersionNum[] = "4.0"; ///////////////////////////////////////////////////////////////////////////VERSION HERE///////
+
+
+class Tee : public Print {
+  Print &a, &b;
+  public:
+  Tee(Print &a, Print &b) : a(a), b(b) {}
+  virtual size_t write(uint8_t c) {
+    return a.write(c) && b.write(c);
+  }
+  using Print::write;
+};
+
+Tee tee(Serial, lcd);
 
 // 0000000000000000000000000000000000000000000000000000 Void Setup 0000000000000000000000000
 void setup() {
@@ -175,13 +190,14 @@ void setup() {
   //mySerial.begin(9600);  // for MP3 player
   //mp3_set_serial (mySerial);  //set Serial for DFPlayer-mini //mp3 module
   //mp3_set_volume (30);          // 15 is low for unpowered speaker - 30 good for unpowered speaker - requires power off to reset volume
-  Serial.print("01-03-2019  version ");//3.3p");
-  for (int i = 0; i < 4; i++) {
-    Serial.print(VersionNum[i]);
+  //Serial.print("01-03-2019  version ");//3.3p");
+  //for (int i = 0; i < 4; i++) {
+    //Serial.print(VersionNum[i]);
     //delay(500);
-  }
+ 
   Serial.println("");
   Serial.print("<0>");// power off to DCC++ unit
+  Serial.println("");
   delay(1500);
   lcd.clear();
 
@@ -192,17 +208,7 @@ void setup() {
   //  LocoAddress[ActiveAddress] = DCCAddress1; // start out with main DCC address active - secondary is DCCAddress2
 }
 
-class Tee : public Print {
-  Print &a, &b;
-  public:
-  Tee(Print &a, Print &b) : a(a), b(b) {}
-  virtual size_t write(uint8_t c) {
-    return a.write(c) && b.write(c);
-  }
-  using Print::write;
-};
 
-Tee tee(Serial, lcd);
 
 // 0000000000000000000000000000000000 Void Loop 00000000000000000000000000000000000000000000000000000000000000000000000
 void loop() {
@@ -251,7 +257,7 @@ void loop() {
   }
   if (irrecv.decode(&results))
   {
-    translateIR(); //000000000000000000000000000000000000000000000000000000000000000000000000000000 Use translateIR
+    translateIR(); //000000000000000000000000000000000000000000000000000000000000000000000000000000 Use translate IR
     irrecv.resume(); // Receive the next value
   }
   if ((irButton > 0 && irButton < 13) | (irButton == 14 | irButton == 16)) {
@@ -261,7 +267,7 @@ void loop() {
   if (irButton != 13 && irButton != 17 && irButton != 0) { // set delay to slower speed for non repeating keys
     IRdelay = 240;
   }
-  if (irButton >= 1 && irButton < 10) { //Funtions done with numbers 1-9 - clear all with 10.......NUMBERS
+  if (irButton >= 1 && irButton < 10) { //Turnouts done with numbers 1-9 - clear all with 10.......NUMBERS
     //mp3_play(irButton);
     doDCCturnouts();
     irButton = 0;
@@ -312,26 +318,47 @@ void loop() {
   if (irButton == 13 | (irButton == 99 && upFlag == 1)) // UP and repeat key (99)..................UP
   {
     //Serial.print("locospeed0 ");
-    Serial.println(LocoSpeed[ActiveAddress]);
+    //Serial.println(LocoSpeed[ActiveAddress]);
     (LocoSpeed[ActiveAddress])++;
     upFlag = 1;
     dnFlag = 0;
     irButton = 0;
     //Serial.println("found UP 000");
     //Serial.print("locospeed1 ");
-    Serial.println(LocoSpeed[ActiveAddress]);
+    //Serial.println(LocoSpeed[ActiveAddress]);
     //bsy = digitalRead(buusyPin);
     //if (bsy == 1) //mp3_play(14);
     IRdelay = 20;
   }
 
-  if (irButton == 12)//...........................................................................POWER
-  {
-    //   Serial.println("found Power ");
-    Serial.print("<0>");
-    //mp3_play(13);
-    irButton = 0;
-  }
+    if (irButton == 12){//...........................................................................POWER Toggle
+      if (powerToggle == 0){
+        Serial.println ("<1>");
+        powerToggle = 1;
+        irButton = 0;
+        delay (500);
+        }
+      else {
+        Serial.println ("<0>");
+        powerToggle = 0;
+        irButton = 0;
+        delay (500);
+        
+        }
+    }
+//  if (irButton == 12)//...........................................................................POWER
+//  {
+//    if (powerToggle == 1){
+//          //   Serial.println("found Power ");
+//    Serial.println("<0>");
+//    //mp3_play(13);
+//    delay(100);
+//    }
+//    irButton = 0;
+//  }
+
+    
+  
 
   if (irButton == 17 | (irButton == 99 && dnFlag == 1))  // DOWN..................................DOWN
   {
@@ -375,7 +402,7 @@ void loop() {
     doDCC();
     old_speed = LocoSpeed[ActiveAddress] ;
     //   Serial.print("LocoSpeed[ActiveAddress] 4 ");
-    Serial.println(LocoSpeed[ActiveAddress] , DEC);
+    //Serial.println(LocoSpeed[ActiveAddress] , DEC);
   }
 
 }
@@ -458,14 +485,14 @@ void doOKMENU() {
   lcd.setCursor(5, 1);
   lcd.print(LocoAddress[ActiveAddress]);
   //mp3_play(20);
-  dlayPrint();
+  //dlayPrint();
   do {
     if (irrecv.decode(&results))
     {
       translateIR();
       irrecv.resume(); // Receive the next value
-      Serial.print("TOP IR Button ");
-      Serial.println(irButton);
+      //Serial.print("TOP IR Button ");
+      //Serial.println(irButton);
       if (irButton > 0 && irButton < 5 || irButton == 15) {
         if (irButton != 15) {
           //mp3_play(irButton);
@@ -607,7 +634,7 @@ int translateIR() // takes action based on IR code received
       break;
     case KeyesOK:
     case SonyMenu:
-      Serial.println(" - MENU - ");
+      //Serial.println(" - MENU - ");
       irButton = 15;
       break;
     case KeyesRight:
@@ -776,8 +803,9 @@ void doDCCturnouts() {
 //  Serial.printc;
 //  Serial.println(" 1>");
 
-  String outText = (String) "<a " + TurnoutAdd[irTemp] + " " + TurnoutAdd[irTemp] + " 1>";
-  lcd.setCursor (1, 1);
+  String outText = (String) "<a" + TurnoutAdd[irTemp] + " " + TurnoutSub[irTemp] + " 1>";
+  lcd.setCursor (0, 1);
+  Serial.println();
   tee.print (outText);
   lcd.setCursor (14, 1);       // go to end of 2nd line
   lcd.print ("T");
@@ -840,8 +868,8 @@ void dlayPrint()
 // 0000000000000000000000000000000000000000000 Do DCC 000000000000000000000000000000000000000000
 void doDCC() {
 //  Serial.print("d = ");
-//  Serial.println(LocoDirection[ActiveAddress] );
-  Serial.print("<1>");
+  Serial.println(); ///(LocoDirection[ActiveAddress] );
+  //Serial.print("<1>");
   Serial.print("<t1 ");
   Serial.print(LocoAddress[ActiveAddress] );//locoID);
   Serial.print(" ");
