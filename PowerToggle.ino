@@ -1,5 +1,5 @@
  void setup() {
-  powerToggle = 0;
+  int powerToggle = 0;
 }
 
 void loop() {
