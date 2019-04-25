@@ -14,7 +14,7 @@ http://www.trainelectronics.com/DCC_Arduino/DCC++/IRThrottle/images/DCC__Throttl
   < = - 14
   > = -16
   OK = Menu choices -15
-  Power = power off to DCC++ (<0>)
+  Power = Toggle power no/off to DCC++ (<0> or <1>)
 */
 // the following defines the codes for Keyes brand and Sony IR remote controls
 
@@ -135,9 +135,9 @@ int i = 0;
 int irTemp = 0;
 int StopButtonPressedOnceFlag = 0; // used to detect 2nd button push within a fraction of a second
 unsigned long time;
-char VersionNum[] = "4.0"; ///////////////////////////////////////////////////////////////////////////VERSION HERE///////
 
 
+//0000000000000000000000000000000000000000 Print to Serial and LCD at the same time 0000000000000000000000
 class Tee : public Print {
   Print &a, &b;
   public:
@@ -173,28 +173,16 @@ void setup() {
     LocoAddress[1] = 3;
   }
 
-  //lcd.begin (16, 2); //  LCD is 16 characters x 2 lines
-  //lcd.setBacklightPin(BACKLIGHT_PIN, POSITIVE);
-  //lcd.setBacklight(HIGH);  // Switch on the backlight
-  //lcd.home (); // go home
+
   Serial.begin (115200);
   lcd.setCursor(0, 0);
   lcd.print("DCC++ Throttle");
   lcd.setCursor(0, 1);
-  lcd.print("01-03-19 - v");//3.3p");
-  for (int i = 0; i < 4; i++) {
-    lcd.print(VersionNum[i]);
-    //delay(500);
+  lcd.print("01-03-19 - v4.0"); // version number in here
+
   }
   irrecv.enableIRIn(); // Start the receiver
-  //mySerial.begin(9600);  // for MP3 player
-  //mp3_set_serial (mySerial);  //set Serial for DFPlayer-mini //mp3 module
-  //mp3_set_volume (30);          // 15 is low for unpowered speaker - 30 good for unpowered speaker - requires power off to reset volume
-  //Serial.print("01-03-2019  version ");//3.3p");
-  //for (int i = 0; i < 4; i++) {
-    //Serial.print(VersionNum[i]);
-    //delay(500);
- 
+
   Serial.println("");
   Serial.print("<0>");// power off to DCC++ unit
   Serial.println("");
@@ -331,7 +319,7 @@ void loop() {
     IRdelay = 20;
   }
 
-    if (irButton == 12){//...........................................................................POWER Toggle
+    if (irButton == 12){           //...........................................................POWER Toggle
       if (powerToggle == 0){
         Serial.println ("<1>");
         powerToggle = 1;
@@ -343,22 +331,10 @@ void loop() {
         powerToggle = 0;
         irButton = 0;
         delay (500);
-        
+
         }
     }
-//  if (irButton == 12)//...........................................................................POWER
-//  {
-//    if (powerToggle == 1){
-//          //   Serial.println("found Power ");
-//    Serial.println("<0>");
-//    //mp3_play(13);
-//    delay(100);
-//    }
-//    irButton = 0;
-//  }
 
-    
-  
 
   if (irButton == 17 | (irButton == 99 && dnFlag == 1))  // DOWN..................................DOWN
   {
@@ -374,11 +350,14 @@ void loop() {
 //    if (LocoSpeed[ActiveAddress] == 0) //mp3_play(16);
     irButton = 0;
   }
+
+
   if (irButton == 11) //* key  - EXIT does STOP..................................................EXIT (* key)
   {
     if (StopButtonPressedOnceFlag == 1) {
       if (millis() - time <= 1000 )
       {
+        Serial.println ();
         Serial.println("double hit on STOP");  // key hit again within 1 second
         Serial.print("<0>");
         delay(100);
@@ -557,7 +536,7 @@ void doMainLCD() {
   lcd.print(ActiveAddress + 1);
   lcd.setCursor(1, 1); // start of 2nd line
 
-  
+
 
 //  char TestData;        //0000000000000000000000000000000000 My LCD Serial Monitor 00000000000000000
 //  if(Serial.availableForWrite() ) {
@@ -810,7 +789,7 @@ void doDCCturnouts() {
   lcd.setCursor (14, 1);       // go to end of 2nd line
   lcd.print ("T");
   lcd.print(irButton, DEC);
-   
+
  }
 
 
